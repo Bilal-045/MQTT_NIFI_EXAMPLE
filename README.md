@@ -1,96 +1,90 @@
-<h1 align="center">🚀 MQTT + Apache NiFi + InfluxDB Integration Example</h1>
+### MQTT + Apache NiFi + InfluxDB Integration Demo
 
-<p align="center">Stream real-time data from multiple MQTT brokers into InfluxDB using Apache NiFi.</p>
+This project demonstrates streaming data from multiple MQTT brokers into InfluxDB using Apache NiFi as the data flow manager.
 
----
+### Quick Setup Summary
 
-## 📦 Project Overview
+1-Configure your environment by creating a .env file
 
-This project sets up a complete data streaming pipeline using:
+2-Build the necessary Docker images
 
-- **MQTT brokers** (Mosquitto)
-- **Apache NiFi** for data routing & transformation
-- **InfluxDB** for time-series storage
+3-Launch the full system with make start
 
----
+### Building the NiFi Image with InfluxDB 2.0 Plugin
 
-## ⚡ Quick Start
+Clone this repository locally
 
-### 1. Clone the Repository
-
+Build the custom NiFi image (which includes the InfluxDB processor) by running:
 ```bash
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
+make build-nifi
 ```
-### 2. Copy & Configure .env
+
+To run a plain NiFi instance without pre-configured flows, use:
+```bash
+docker run -p 8443:8443 influxdb/nifi:latest ../scripts/start.sh
+```
+
+You can import the provided NiFi template (MQTT-to-InfluxDB.xml) to experiment with streaming MQTT messages to InfluxDB.
+
+### Launching the Full Example with Multiple MQTT Brokers
+
+1-Duplicate the example environment file:
 ```bash
 cp example.env .env
 ```
-Edit .env to match your configuration.
 
-### 3. Build & Start the Stack
+2-Modify the .env file to suit your configuration
+
+3-Build all Docker images:
 ```bash
 make build
+```
+4-Start all containers and services:
+```bash
 make start
 ```
+5-Wait about 30 seconds for NiFi to become available. To check logs for any service, use:
+make logs NODE=[service_name]
+For example:
+```bash
+make logs NODE=nifi
+```
+6-Verify that data is being ingested into your InfluxDB bucket as expected
+Access NiFi at https://localhost:8443/nifi — accept the security warning to proceed
 
-NiFi takes ~30 seconds to start.
-Use make logs NODE=nifi to follow NiFi logs.
-
-### Access the Services
-
-NiFi UI: https://localhost:8443/nifi
-Click “allow unsafe” if prompted (self-signed cert)
-
-### Login Credentials:
+7-Log in with the credentials:
 
 Username: admin
+
 Password: nifipassword
 
-### Stop Everything
+8-To shut down the running containers, run:
 ```bash
 make stop
 ```
-### How It Works
+### What’s Happening Under the Hood?
 
-When you run make start, the following happens:
+When you execute make start, several MQTT clients and two Mosquitto brokers spin up alongside a NiFi instance. Once running, the nifi.bash script configures NiFi via its REST API to set up process groups that subscribe to the MQTT topics provided by the Mosquitto brokers.
 
-Multiple MQTT clients start publishing messages
+- The MQTT clients publish messages in different formats:
 
-Two Mosquitto brokers are spun up
+		One sends InfluxDB Line Protocol
 
-A custom NiFi instance auto-configures using nifi.bash
+		Another publishes JSON payloads
 
-Messages from brokers are routed to InfluxDB
+		The third sends simple text strings
+- NiFi’s flow groups are each tailored to handle one of these data formats, converting all incoming data into Line Protocol before forwarding it to InfluxDB.
 
-MQTT Clients → Mosquitto Brokers → Apache NiFi → InfluxDB
+Repository Contents
 
-### Test It Yourself
+Dockerfile.nifi: Dockerfile to build a NiFi image bundled with the InfluxDB processor plugin
 
-You can send custom MQTT messages using tools like MQTTBox or MQTT Explorer.
+Dockerfile.nifipoc: Dockerfile containing the nifi.bash script to automate NiFi configuration
 
-✅ Example
+docker-compose.yml: Docker Compose file defining the services used in this example
 
-Broker: tcp://mosquitto1:1883
+nifi.bash: Bash script that configures NiFi’s process groups and connections via API calls
 
-Topic: /1/lp
+nifi.http: REST Client file for VSCode allowing you to send HTTP requests to NiFi’s API
 
-Payload:
-
-mqtt,mytag=tagvalue myfield="fieldvalue"
-
-
-NiFi is also subscribed to:
-
-/2/json → JSON data
-
-/2/string → Plain text
-
-🧱 Data Formats Handled
-Client	Format	Topic
-1️⃣	InfluxDB Line Protocol	/1/lp
-2️⃣	JSON	/2/json
-3️⃣	Plain Text	/2/string
-
-Each process group in NiFi handles one format → transforms → sends to InfluxDB.
-
+MQTT-to-InfluxDB.xml: NiFi flow template included in the image demonstrating MQTT to InfluxDB streaming
