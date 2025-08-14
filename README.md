@@ -94,11 +94,3 @@ Client	Format	Topic
 
 Each process group in NiFi handles one format → transforms → sends to InfluxDB.
 
-📁 Repository Structure
-File / Folder	Description
-Dockerfile.nifi	Custom NiFi with InfluxDB processor plugin
-Dockerfile.nifipoc	NiFi image with auto-config script
-docker-compose.yml	Defines the complete stack
-nifi.bash	Bash script to auto-configure NiFi
-nifi.http	Test file (works with VSCode REST Client)
-MQTT-to-InfluxDB.xml	NiFi template with MQTT-to-Influx flow
